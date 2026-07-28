@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\".venv/Scripts/python.exe\" -m py_compile app/ui/theme.py app/ui/starfield_widget.py app/services/motivation.py app/main.py app/ui/main_window.py app/ui/checkin_dialog.py app/ui/complete_session_dialog.py)"
+    ]
+  }
+}

@@ -1,0 +1,323 @@
+Project: Personal AI Mentor & Productivity Companion
+Vision
+
+I want to build a personal AI mentor application that runs on my laptop and helps me maintain discipline, track progress, and improve continuously.
+
+This is not just a timer or task manager. The goal is to create an AI coach that understands my goals, knows my progress, helps me plan my day, reminds me to stay on track, and analyzes my performance over time.
+
+The primary use case is DSA learning and career growth, but the architecture should allow expansion to other goals like research, projects, learning new technologies, etc.
+
+The application should feel like having a personal mentor sitting beside me throughout the day.
+
+Core Idea
+
+Every morning, I should be able to open the application and tell it my plan using voice or text.
+
+Example:
+
+"I want to spend 2 hours on DSA, 3 hours on my AI project, and 1 hour reading research papers."
+
+The AI should understand this, convert it into structured tasks, create a schedule, and track my progress.
+
+During the day:
+
+It should run quietly in the background.
+It should remind me when a task starts or ends.
+It should notify me when I complete a session.
+It should ask me for updates.
+I should be able to respond using my voice.
+It should analyze my progress and give recommendations.
+
+The application should gradually understand my working patterns and become a better mentor.
+
+Main Goals / User Stories
+1. Personal Daily Planner
+
+As a user, I should be able to create my daily plan easily.
+
+Input methods:
+
+Voice input
+Text input
+
+Example:
+
+"I will do graphs in DSA from 8 AM to 10 AM."
+
+The application should:
+
+Understand the task
+Extract duration
+Extract goals
+Create a structured schedule
+
+Example output:
+
+Task:
+DSA Practice
+
+Duration:
+2 hours
+
+Goal:
+Complete Graph Algorithms
+
+Status:
+Not Started
+2. Background Desktop Application
+
+The application should work as a real desktop application.
+
+Requirements:
+
+Should run on my laptop without opening VS Code.
+Should continue working in the background.
+Should minimize instead of closing.
+Should provide desktop notifications.
+Should optionally start automatically when the laptop starts.
+Should not require a browser tab to remain open.
+
+The experience should be similar to applications like Spotify, Discord, or other desktop apps.
+
+3. Smart Timer System
+
+The application should manage my planned sessions.
+
+Example:
+
+I schedule:
+
+DSA:
+8:00 AM - 10:00 AM
+
+The application should:
+
+Start tracking automatically.
+Show remaining time.
+Notify me when complete.
+Play a sound.
+Ask for progress.
+
+Example notification:
+
+Your DSA session is complete.
+
+How did it go?
+
+Speak your update.
+4. Voice-Based Progress Updates
+
+I do not want to type everything.
+
+The application should support voice interaction.
+
+Example:
+
+I say:
+
+"I solved two binary search problems but struggled with identifying the search space."
+
+The system should:
+
+Convert speech to text.
+Understand the update.
+Store relevant information.
+Update my progress.
+5. AI Mentor System
+
+The AI should not only record information.
+
+It should analyze my progress.
+
+It should maintain knowledge about:
+
+Current goals
+Completed topics
+Weak areas
+Learning speed
+Consistency
+Previous struggles
+
+Example:
+
+After multiple updates:
+
+The AI should understand:
+
+User is good at implementation.
+
+User struggles with recognizing patterns.
+
+User often underestimates time required for medium problems.
+
+User needs more revision of graph algorithms.
+
+Then provide useful guidance.
+
+6. Progress Dashboard
+
+The application should have a clean dashboard.
+
+It should display:
+
+Today's Progress
+
+Example:
+
+Today's Completion
+
+████████░░ 80%
+Tasks
+✓ DSA - Completed
+✓ Python - Completed
+○ Research - Pending
+Long-Term Progress
+
+Examples:
+
+DSA topics completed
+Problems solved
+Weak topics
+Consistency streak
+Weekly productivity
+7. Long-Term Memory
+
+The application should maintain my history.
+
+It should remember:
+
+Previous daily plans
+Completed tasks
+Failed tasks
+Learning progress
+Important goals
+
+The purpose is that the AI mentor becomes more personalized over time.
+
+8. Free Technology Requirement
+
+Important:
+
+The entire project should be built using free tools wherever possible.
+
+I do not want paid subscriptions or expensive infrastructure.
+
+Prefer:
+
+Open-source libraries
+Free hosting tiers
+Local processing when possible
+Free APIs if available
+
+Avoid requiring paid services.
+
+If an external API is optional, provide a free alternative.
+
+Development Approach
+
+Build this incrementally.
+
+Do not attempt the complete application immediately.
+
+The project should be developed in phases.
+
+Phase 1: Basic Working Application
+
+Goal:
+
+Create a functional desktop productivity application.
+
+Features:
+
+Desktop interface
+Create tasks
+Timer
+Notifications
+Local database
+Basic dashboard
+
+No AI required initially.
+
+Phase 2: AI Integration
+
+Add:
+
+Natural language task creation
+AI schedule generation
+AI suggestions
+Basic progress analysis
+Phase 3: Voice Interaction
+
+Add:
+
+Speech input
+Voice-based progress updates
+Voice commands
+Phase 4: Intelligent Mentor
+
+Add:
+
+Long-term memory
+Pattern analysis
+Personalized recommendations
+Learning strategy suggestions
+Phase 5: Advanced Features (Optional)
+
+Possible additions:
+
+Integration with LeetCode
+GitHub activity tracking
+Study analytics
+Productivity trends
+Goal prediction
+AI-generated learning roadmap
+Evaluation Criteria
+
+The final application should satisfy these requirements:
+
+Functionality
+
+✓ Runs as an independent desktop application
+✓ Does not require VS Code running
+✓ Can run in the background
+✓ Provides notifications
+✓ Tracks tasks and sessions
+✓ Stores progress permanently
+
+User Experience
+
+✓ Simple interface
+✓ Easy morning planning
+✓ Minimal typing required
+✓ Voice interaction support
+✓ Clear progress visualization
+
+AI Capability
+
+✓ Understands natural language schedules
+✓ Provides useful feedback
+✓ Remembers previous progress
+✓ Identifies weak areas
+✓ Suggests improvements
+
+Technical Quality
+
+✓ Clean architecture
+✓ Maintainable code
+✓ Uses free/open-source technologies
+✓ Easy to extend in future
+✓ Can be packaged and installed easily
+
+Final Objective
+
+Create a personal AI mentor that helps me become more consistent, focused, and disciplined.
+
+The application should transform my daily goals into an actionable system:
+
+Plan → Work → Report → Analyze → Improve
+
+The final product should feel like a personal coach that stays with me throughout my learning journey.
+
+Important instruction for development:
+
+Before writing large amounts of code, first analyze the requirements, decide the best architecture, explain the plan, and then implement step-by-step. Choose the technologies yourself based on simplicity, reliability, and free availability.

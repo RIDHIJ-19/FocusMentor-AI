@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+data/mentor.db
+.env
+logs/
+.claude/settings.local.json
