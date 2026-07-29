@@ -294,6 +294,24 @@ just a random flavor line regardless of outcome:
   gets no special audio — it doesn't guess-punish or guess-celebrate
   without real evidence in the note.
 
+## Finish Early / Pause (DONE)
+
+Two manual session controls next to the countdown, both in
+`app/ui/main_window.py`:
+
+- **Finish Early** (`_on_finish_early`) — stops the timer and calls
+  `_on_timer_finished()` directly, reusing the exact same completion
+  pipeline (dialog, AI verdict, jingle/buzzer, history storage) a natural
+  timeout gets. No separate code path to maintain.
+- **Pause/Resume** (`_on_pause_resume`) — `TimerService.pause()` stops the
+  `QTimer` without resetting `_remaining_seconds` (unlike `stop()`, which
+  zeroes it); `resume()` restarts it from exactly where it left off.
+  `_next_checkin_seconds` is untouched by either, so check-in cadence isn't
+  disrupted by a pause — verified by fast-forwarding a paused/resumed
+  session and confirming check-ins still land on the correct thresholds.
+  Button toggles label Pause ↔ Resume; both disabled when no session is
+  active.
+
 ## Phase 4 — Intelligent Mentor (not started)
 
 - Long-term memory / pattern analysis over the `tasks` table (e.g. with

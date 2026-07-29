@@ -22,6 +22,10 @@ class TimerService(QObject):
         return self._qtimer.isActive()
 
     @property
+    def is_paused(self) -> bool:
+        return not self._qtimer.isActive() and self._remaining_seconds > 0
+
+    @property
     def remaining_seconds(self) -> int:
         return self._remaining_seconds
 
@@ -42,6 +46,16 @@ class TimerService(QObject):
         self._qtimer.stop()
         self._remaining_seconds = 0
         self._next_checkin_seconds = None
+
+    def pause(self) -> None:
+        """Freezes the countdown at its current remaining time, unlike
+        stop() which resets it to 0. Check-in timing (_next_checkin_seconds)
+        is left untouched, so it picks up exactly where it left off."""
+        self._qtimer.stop()
+
+    def resume(self) -> None:
+        if self._remaining_seconds > 0:
+            self._qtimer.start()
 
     def _on_tick(self) -> None:
         self._remaining_seconds -= 1

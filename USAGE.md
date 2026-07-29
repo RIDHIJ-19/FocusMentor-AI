@@ -90,6 +90,12 @@ timeout (sound, the "How did it go?" prompt, AI judging your note, the
 matching jingle/buzzer). You don't lose that feedback just because you
 beat the clock.
 
+Need to step away mid-session? Click **Pause** — the countdown freezes
+exactly where it is (no time lost) and the button becomes **Resume**.
+Click it again to pick up right where you left off. Check-in timing isn't
+thrown off by a pause either — it just picks up counting from where it
+paused.
+
 ### Mid-session check-ins
 
 For longer sessions, you'll get an announcement partway through (tray

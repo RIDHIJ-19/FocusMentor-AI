@@ -130,6 +130,10 @@ class MainWindow(QMainWindow):
         session_row = QHBoxLayout()
         self.active_session_label = QLabel("No active session.")
         session_row.addWidget(self.active_session_label, 1)
+        self.pause_button = QPushButton("Pause")
+        self.pause_button.setEnabled(False)
+        self.pause_button.clicked.connect(self._on_pause_resume)
+        session_row.addWidget(self.pause_button)
         self.finish_early_button = QPushButton("Finish Early")
         self.finish_early_button.setEnabled(False)
         self.finish_early_button.clicked.connect(self._on_finish_early)
@@ -307,6 +311,8 @@ class MainWindow(QMainWindow):
         )
         self.timer_service.start(task.duration_min, checkin_interval)
         self.finish_early_button.setEnabled(True)
+        self.pause_button.setEnabled(True)
+        self.pause_button.setText("Pause")
         flavor = motivation.get_line(motivation.SESSION_START)
         self._announce(f"Started: {task.name}. {flavor}")
         self.refresh()
@@ -317,6 +323,22 @@ class MainWindow(QMainWindow):
         logger.info("Finish Early clicked for task_id=%d", self.active_task_id)
         self.timer_service.stop()
         self._on_timer_finished()
+
+    def _on_pause_resume(self) -> None:
+        if self.active_task_id is None:
+            return
+        if self.timer_service.is_paused:
+            self.timer_service.resume()
+            self.pause_button.setText("Pause")
+            task = self.repo.get_by_id(self.active_task_id)
+            minutes, seconds = divmod(self.timer_service.remaining_seconds, 60)
+            self.active_session_label.setText(f"{task.name}: {minutes:02d}:{seconds:02d} remaining")
+            logger.info("Resumed session for task_id=%d", self.active_task_id)
+        else:
+            self.timer_service.pause()
+            self.pause_button.setText("Resume")
+            self.active_session_label.setText(self.active_session_label.text() + " (Paused)")
+            logger.info("Paused session for task_id=%d", self.active_task_id)
 
     def _on_timer_tick(self, remaining_seconds: int) -> None:
         minutes, seconds = divmod(remaining_seconds, 60)
@@ -354,6 +376,8 @@ class MainWindow(QMainWindow):
         self.active_session_label.setText("No active session.")
         self.tray_icon.setToolTip(APP_NAME)
         self.finish_early_button.setEnabled(False)
+        self.pause_button.setEnabled(False)
+        self.pause_button.setText("Pause")
 
         if not task:
             return
