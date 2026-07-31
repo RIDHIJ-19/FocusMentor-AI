@@ -46,12 +46,12 @@ _NUMBER_WORDS = {
 }
 
 _WORD_NUMBER_DURATION_RE = re.compile(
-    r"\b(" + "|".join(_NUMBER_WORDS) + r")\b(\s*)(hours?|hrs?|h\b|minutes?|mins?|m\b)",
+    r"\b(" + "|".join(_NUMBER_WORDS) + r")\b(\s*)(?:more\s+|extra\s+)?(hours?|hrs?|h\b|minutes?|mins?|m\b)",
     re.IGNORECASE,
 )
 
 _DURATION_RE = re.compile(
-    r"(\d+(?:\.\d+)?)\s*(hours?|hrs?|h\b|minutes?|mins?|m\b)", re.IGNORECASE
+    r"(\d+(?:\.\d+)?)\s*(?:more\s+|extra\s+)?(hours?|hrs?|h\b|minutes?|mins?|m\b)", re.IGNORECASE
 )
 
 _TIME_RANGE_RE = re.compile(
@@ -120,6 +120,20 @@ def _clean_name(clause: str) -> str:
     if not name:
         return "Task"
     return name[0].upper() + name[1:]
+
+
+def extract_duration_minutes(text: str) -> Optional[int]:
+    """Pulls a single duration out of free text, e.g. "give me 10 more
+    minutes" -> 10, "another half hour" -> 30, "give me an hour" -> 60.
+    Returns None if no duration phrase is found. Shares the same word-number
+    and half-hour handling as parse(), just without the task-splitting."""
+    if not text or not text.strip():
+        return None
+    normalized = _numbers_to_digits(text)
+    match = _DURATION_RE.search(normalized)
+    if not match:
+        return None
+    return _to_minutes(float(match.group(1)), match.group(2))
 
 
 def parse(text: str) -> List[ParsedTask]:

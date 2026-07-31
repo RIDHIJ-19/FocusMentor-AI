@@ -312,6 +312,45 @@ Two manual session controls next to the countdown, both in
   Button toggles label Pause ↔ Resume; both disabled when no session is
   active.
 
+## Need More Time (DONE)
+
+Ran out the clock without finishing? `CompleteSessionDialog` (and
+`CheckinDialog` shares the underlying parser but not this button — extension
+is completion-only) gets a **"Need More Time"** button next to OK. Typing or
+speaking something like *"give me 10 more minutes"* into the same reply box
+and clicking it, instead of OK, keeps the session going instead of marking
+it complete:
+
+- `rule_based_parser.extract_duration_minutes(text)` — a new reusable
+  function pulled out of the existing word-number/half-hour machinery
+  (`_numbers_to_digits`, `_DURATION_RE`) already used by `parse()`. Fixed a
+  real gap while building this: the regexes required the number and unit to
+  be *immediately* adjacent, but real extension phrasing almost always has
+  "more" in between ("10 more minutes", "ten more min") — both
+  `_DURATION_RE` and `_WORD_NUMBER_DURATION_RE` now tolerate an optional
+  `more`/`extra` filler between them. Verified this didn't regress
+  `parse()`'s existing idea.txt example sentences.
+- If no duration can be parsed, the dialog stays open with a hint instead of
+  silently doing nothing or guessing.
+- On accept, `MainWindow._on_timer_finished` branches before the normal
+  completion path: `TaskRepository.extend_duration(task_id, minutes)` adds
+  to (not replaces) the task's stored `duration_min` — **not just a fresh
+  `TimerService.start()`** — because `delete_overdue_in_progress()`'s
+  crash-recovery check computes "should have ended by" as `started_at +
+  duration_min`. Restarting the timer without updating the DB's duration
+  would make a crash during the extension look overdue against the
+  *original, shorter* duration and get wrongly auto-deleted. Verified both
+  directions: extending a would-be-overdue task keeps it alive through
+  cleanup, and a task still overdue *even after* the extension still gets
+  cleaned up correctly.
+- The extension request itself is stored via `UpdateRepository.add(...,
+  EXTEND, note)` — a third `kind` alongside `CHECKIN`/`COMPLETE` in
+  `app/models/update.py`, so it shows up in Dashboard → Recent Updates like
+  any other reply.
+- Session state (active_task_id, Finish Early / Pause button enablement,
+  check-in cadence recomputed for the new `extend_minutes`) is restored
+  exactly as if a fresh (shorter) session had just started.
+
 ## Phase 4 — Intelligent Mentor (not started)
 
 - Long-term memory / pattern analysis over the `tasks` table (e.g. with

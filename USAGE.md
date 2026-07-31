@@ -122,6 +122,12 @@ magenta text in the popup itself.
   (e.g. *"Solved two binary search problems but struggled with identifying
   the search space"*), or click **🎤 Record** and speak it instead, then
   click OK.
+- **Not actually done yet?** Instead of clicking OK, type or say how much
+  more time you need — e.g. *"give me 10 more minutes"* or *"another half
+  hour"* — and click **Need More Time**. The session keeps going instead of
+  completing; check-ins recalculate for the new time added. If it can't
+  tell how long you meant, it'll ask you to be more specific rather than
+  guessing.
 - The task is marked `✓ Completed` with your note saved against it.
 - Right after, the app judges from what you wrote whether you actually hit
   your goal (using AI if you have a Groq key, a keyword-based fallback

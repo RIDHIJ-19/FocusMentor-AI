@@ -89,6 +89,23 @@ class TaskRepository:
         finally:
             conn.close()
 
+    def extend_duration(self, task_id: int, additional_minutes: int) -> None:
+        """Adds minutes to a task's recorded duration when the user asks for
+        more time instead of completing. Must update duration_min (not just
+        restart the in-memory timer) so delete_overdue_in_progress() keeps
+        computing the right "should have ended by" time -- otherwise a crash
+        during the extension would look overdue against the original,
+        shorter duration and get wrongly auto-deleted."""
+        conn = get_connection()
+        try:
+            conn.execute(
+                "UPDATE tasks SET duration_min = duration_min + ? WHERE id = ?",
+                (additional_minutes, task_id),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
     def delete(self, task_id: int) -> None:
         conn = get_connection()
         try:

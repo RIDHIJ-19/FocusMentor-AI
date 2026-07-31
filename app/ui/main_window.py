@@ -28,7 +28,7 @@ from app.config import (
 )
 from app.db.repository import TaskRepository
 from app.db.update_repository import UpdateRepository
-from app.models.update import CHECKIN, COMPLETE
+from app.models.update import CHECKIN, COMPLETE, EXTEND
 from app.services import autostart_service, motivation, settings_service
 from app.services.ai_service import AIService, SHORTFALL, SUCCESS
 from app.services.timer_service import TimerService
@@ -391,6 +391,30 @@ class MainWindow(QMainWindow):
 
         dialog = CompleteSessionDialog(task.name, "", self)
         dialog.exec()
+
+        extend_minutes = dialog.get_extend_minutes()
+        if extend_minutes:
+            note = dialog.get_notes()
+            logger.info(
+                "Extending task_id=%d by %d min (note=%r)", task_id, extend_minutes, note
+            )
+            self.repo.extend_duration(task_id, extend_minutes)
+            self.update_repo.add(task_id, EXTEND, note)
+
+            self.active_task_id = task_id
+            self.finish_early_button.setEnabled(True)
+            self.pause_button.setEnabled(True)
+            self.pause_button.setText("Pause")
+
+            checkins_on = (
+                settings_service.get_checkins_enabled() and extend_minutes >= MIN_CHECKIN_DURATION_MIN
+            )
+            checkin_interval = extend_minutes // 4 if checkins_on else 0
+            self.timer_service.start(extend_minutes, checkin_interval)
+            self._announce(f"Got it — {extend_minutes} more minutes on {task.name}.")
+            self.refresh()
+            return
+
         notes = dialog.get_notes()
         self.repo.update_status(task_id, STATUS_COMPLETED, notes=notes or None)
         self.update_repo.add(task_id, COMPLETE, notes)

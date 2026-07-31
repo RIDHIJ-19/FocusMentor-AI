@@ -6,13 +6,14 @@ from typing import Optional
 
 CHECKIN = "checkin"
 COMPLETE = "complete"
+EXTEND = "extend"
 
 
 @dataclass
 class Update:
     id: Optional[int]
     task_id: int
-    kind: str  # CHECKIN | COMPLETE
+    kind: str  # CHECKIN | COMPLETE | EXTEND
     elapsed_min: Optional[int]
     remaining_min: Optional[int]
     note: Optional[str]
