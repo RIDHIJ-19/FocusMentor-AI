@@ -5,9 +5,11 @@ project, for future reference. It reflects the vision in [idea.txt](idea.txt).
 
 ## Development approach
 
-The project is built incrementally, per the phased plan below. **We are
-currently on Phase 3.** Do not skip ahead — each phase should be working and
-usable before the next is added.
+The project is built incrementally, per the phased plan below. **The web
+version (`web/`) is now the primary, actively developed way to use this
+app** — see "Web Version" below. Phases 1-3, the UI theme, and the stability
+fixes documented below all happened on the desktop app (`app/`) first; it
+still works but is no longer being extended.
 
 ## Phase 1 — Basic Working Application (DONE)
 
@@ -350,6 +352,75 @@ it complete:
 - Session state (active_task_id, Finish Early / Pause button enablement,
   check-in cadence recomputed for the new `extend_minutes`) is restored
   exactly as if a fresh (shorter) session had just started.
+
+## Web Version (DONE) — replaces the desktop app going forward
+
+The user decided to stop using the Windows desktop app and use a hosted
+website instead. This isn't a redeploy of the same code — the desktop app
+leans on OS-level features with no browser equivalent (system tray,
+`winreg` autostart, `winsound`/`pyttsx3`, `sounddevice` mic capture, a
+process that outlives the window). New top-level `web/` directory; `app/`
+is untouched (still in git history, still runs) but no longer developed.
+
+**What ported over almost as-is** (pure logic, no Windows API calls):
+`app/services/ai_service.py`, `rule_based_parser.py` (including
+`extract_duration_minutes`), `motivation.py` → `web/services/`, same
+content/logic. `app/db/database.py` + `repository.py` +
+`update_repository.py` → `web/db.py` + `web/repository.py`, same two-table
+schema and hand-written `sqlite3` style (no ORM — see below for why).
+
+**What got replaced with browser-native equivalents**, in
+`web/static/app.js`:
+
+| Desktop (Windows) | Web |
+|---|---|
+| `QSystemTrayIcon.showMessage` | Web Notifications API |
+| `pyttsx3`/SAPI (subprocess-isolated) | `speechSynthesis` — no subprocess isolation needed, browsers don't have the COM-crash problem the desktop fix worked around |
+| `winsound.Beep` jingle/buzzer | Web Audio API oscillator tones (`beep()`, `playSuccessJingle()`, `playSternAlert()`) |
+| `sounddevice` mic capture | `MediaRecorder`/`getUserMedia`, blob uploaded to `/api/transcribe`, forwarded to Groq Whisper |
+| `winreg` autostart | Dropped, no equivalent |
+| `QTimer` background countdown | Client-side `tick()` comparing `Date.now()` against the server's `started_at` every second — robust to tab throttling because it's always computed from an absolute timestamp, not decremented from a local counter. `visibilitychange` forces an immediate `tick()` on refocus so a backgrounded tab catches up instead of drifting. |
+
+**Honest limitation:** the timer only advances while the tab is open. Close
+it and nothing fires until it's reopened — no way around this without a
+native background process.
+
+**Pause/resume needed new server-side state** the desktop version didn't
+need: the desktop's `TimerService.pause()` just stops an in-memory
+`QTimer`, but the web timer is derived from wall-clock time, so pausing
+requires bookkeeping. `tasks` gained `paused_at` (nullable — set while
+paused) and `paused_seconds` (accumulated total). `TaskRepository.pause()`/
+`resume()` fold elapsed pause time into `paused_seconds` on resume;
+`delete_overdue_in_progress()`'s "should have ended by" calculation now
+adds `paused_seconds` to the deadline, and skips any task currently paused
+entirely (deliberate pause ≠ abandoned).
+
+**Session-scoped SQLite, on purpose:** Render's free Web Service tier has
+an ephemeral filesystem — `web/focusmentor.db` resets on every
+deploy/idle-restart. The user confirmed only current-session storage is
+needed (not permanent cross-restart history), so this was accepted rather
+than adding an external DB service. If durable history is ever wanted
+later, that's the thing to revisit.
+
+**Access control:** a password-gated single-user login was designed and
+then explicitly declined by the user ("no, skip it") — the site is fully
+open to anyone with the URL. Noted here in case that decision is revisited
+once the URL is actually shared/public.
+
+**API surface** (`web/routers/tasks.py`, `web/routers/updates.py`):
+`GET/POST /api/tasks`, `POST /api/tasks/parse`, `DELETE /api/tasks/{id}`,
+`POST /api/tasks/{id}/{start,pause,resume,checkin,finish}`,
+`GET /api/dashboard`, `POST /api/insight`, `POST /api/transcribe`,
+`GET /api/motivation/{category}` (lets the frontend reuse the ported
+`motivation.py` instead of duplicating its content in JS). `finish`'s
+"Need More Time" path reuses `rule_based_parser.extract_duration_minutes`
+server-side (client sends the raw note + `extend_requested: true`, not a
+pre-parsed number) — one source of truth for duration parsing.
+
+**Deploying:** `render.yaml` at the repo root (Render auto-detects it) —
+`pip install -r web/requirements.txt` / `uvicorn web.main:app --host 0.0.0.0
+--port $PORT`, `GROQ_API_KEY` set as a Render env var (optional, same
+offline-fallback behavior as everywhere else in this app if omitted).
 
 ## Phase 4 — Intelligent Mentor (not started)
 

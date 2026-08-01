@@ -4,7 +4,22 @@
       "Bash(\".venv/Scripts/python.exe\" -m py_compile app/ui/theme.py app/ui/starfield_widget.py app/services/motivation.py app/main.py app/ui/main_window.py app/ui/checkin_dialog.py app/ui/complete_session_dialog.py)",
       "Bash(\".venv/Scripts/python.exe\" -m py_compile app/ui/complete_session_dialog.py)",
       "Bash(.venv/Scripts/python.exe -c ' *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(\".venv/Scripts/python.exe\" -m pip install -r web/requirements.txt -q)",
+      "Bash(\".venv/Scripts/python.exe\" -m py_compile web/db.py web/repository.py web/settings.py web/services/rule_based_parser.py web/services/motivation.py web/services/ai_service.py)",
+      "Bash(\".venv/Scripts/python.exe\" -m pip install httpx -q)",
+      "Bash(rm -f web/focusmentor.db)",
+      "Bash(\".venv/Scripts/python.exe\" -m py_compile web/routers/updates.py)",
+      "Bash(\".venv/Scripts/python.exe\" -m py_compile web/routers/tasks.py)",
+      "Bash(node --check web/static/app.js)",
+      "Bash(\".venv/Scripts/python.exe\" -m uvicorn web.main:app --port 8000)",
+      "Bash(curl -s -o /dev/null -w \"GET / -> %{http_code}\\\\n\" http://127.0.0.1:8000/)",
+      "Bash(curl -s -o /dev/null -w \"GET /static/style.css -> %{http_code}\\\\n\" http://127.0.0.1:8000/static/style.css)",
+      "Bash(curl -s -o /dev/null -w \"GET /static/app.js -> %{http_code}\\\\n\" http://127.0.0.1:8000/static/app.js)",
+      "Bash(curl -s http://127.0.0.1:8000/api/tasks)",
+      "Bash(curl -s http://127.0.0.1:8000/api/motivation/session_start)",
+      "Bash(curl -s -X POST http://127.0.0.1:8000/api/tasks/parse -H \"Content-Type: application/json\" -d '{\"text\": \"2 hours on DSA\"}')",
+      "Bash(\".venv/Scripts/python.exe\" -m py_compile web/*.py web/services/*.py web/routers/*.py)"
     ]
   }
 }

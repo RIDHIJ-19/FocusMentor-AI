@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FocusMentor AI</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<canvas id="starfield"></canvas>
+<div id="app">
+  <h1>🧠 FocusMentor AI</h1>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="plan">🚀 Plan</button>
+    <button class="tab-btn" data-tab="dashboard">📊 Dashboard</button>
+    <button class="tab-btn" data-tab="settings">⚙️ Settings</button>
+  </div>
+
+  <!-- Plan tab -->
+  <section class="tab-panel active panel" id="tab-plan">
+    <div class="row between wrap">
+      <div class="section-title" style="margin:0;">Today's Plan</div>
+      <div class="row">
+        <button id="btn-plan-ai">Plan with AI</button>
+        <button id="btn-add-task">+ Add Task</button>
+      </div>
+    </div>
+
+    <ul class="task-list" id="task-list"></ul>
+
+    <div class="session-bar">
+      <span id="session-label" class="stretch muted">No active session.</span>
+      <button id="btn-pause" disabled>Pause</button>
+      <button id="btn-finish-early" disabled>Finish Early</button>
+    </div>
+
+    <div class="row">
+      <button id="btn-start" class="primary">Start Selected</button>
+      <button id="btn-delete" class="danger">Delete Selected</button>
+    </div>
+  </section>
+
+  <!-- Dashboard tab -->
+  <section class="tab-panel panel" id="tab-dashboard">
+    <div class="section-title" style="margin-top:0;">Today's Progress</div>
+    <div class="row">
+      <div class="progress-bar stretch"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+      <span id="progress-pct">0%</span>
+    </div>
+    <ul class="task-list" id="dashboard-checklist"></ul>
+
+    <div class="section-title">Long-Term Progress</div>
+    <p class="muted" id="stat-completed">Sessions completed (all time): 0</p>
+    <p class="muted" id="stat-days">Days with a completed session: 0</p>
+    <button id="btn-insight">Get Mentor Insight</button>
+
+    <div class="section-title">Recent Updates</div>
+    <ul class="update-list" id="update-list"></ul>
+  </section>
+
+  <!-- Settings tab -->
+  <section class="tab-panel panel" id="tab-settings">
+    <label class="row"><input type="checkbox" id="setting-checkins" checked style="width:auto;"> Mid-session check-ins</label>
+    <p class="muted">Fires roughly every quarter of a task's duration (duration ÷ 4). Tasks under 15 minutes never get check-ins.</p>
+
+    <label class="row"><input type="checkbox" id="setting-voice" checked style="width:auto;"> Speak notifications aloud (browser text-to-speech)</label>
+    <p class="muted">Applies to session-start, check-in, and session-complete announcements.</p>
+
+    <label class="row"><input type="checkbox" id="setting-notify" style="width:auto;"> Browser notifications</label>
+    <p class="muted">Click to grant permission -- notifications work even if this tab isn't focused (as long as it's still open).</p>
+
+    <p class="muted">AI features (planning, transcription, insight, completion judging) use a Groq key configured on the server. Without one, planning and completion judging fall back to free offline logic.</p>
+  </section>
+</div>
+
+<div class="toast-stack" id="toast-stack"></div>
+
+<!-- Add Task modal -->
+<div class="modal-backdrop hidden" id="modal-add-task">
+  <div class="modal">
+    <h2>Add Task</h2>
+    <label>Task name</label>
+    <input type="text" id="add-name" placeholder="e.g. DSA Practice">
+    <label>Goal</label>
+    <input type="text" id="add-goal" placeholder="e.g. Complete Graph Algorithms">
+    <label>Duration (minutes)</label>
+    <input type="number" id="add-duration" value="60" min="1">
+    <label><input type="checkbox" id="add-has-start-time" style="width:auto;"> Set a start time</label>
+    <input type="time" id="add-start-time" disabled>
+    <div class="actions">
+      <button id="add-task-cancel">Cancel</button>
+      <button id="add-task-ok" class="primary">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- Plan with AI modal -->
+<div class="modal-backdrop hidden" id="modal-plan-ai">
+  <div class="modal">
+    <h2>Plan with AI</h2>
+    <div class="row between">
+      <label style="margin:0;">Describe your plan in your own words:</label>
+      <button id="ai-mic" class="mic-btn">🎤 Record</button>
+    </div>
+    <textarea id="ai-text" placeholder="I want to spend 2 hours on DSA, 3 hours on my AI project, and 1 hour reading research papers."></textarea>
+    <button id="ai-generate">Generate Tasks</button>
+    <p class="muted" id="ai-status"></p>
+    <p class="muted">Review and uncheck anything you don't want to add:</p>
+    <div id="ai-checklist"></div>
+    <div class="actions">
+      <button id="ai-cancel">Cancel</button>
+      <button id="ai-ok" class="primary">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- Check-in modal -->
+<div class="modal-backdrop hidden" id="modal-checkin">
+  <div class="modal">
+    <h2>Quick Check-in</h2>
+    <p id="checkin-heading"></p>
+    <div class="flavor-line" id="checkin-flavor"></div>
+    <div class="row between">
+      <label style="margin:0;">Your reply:</label>
+      <button id="checkin-mic" class="mic-btn">🎤 Record</button>
+    </div>
+    <textarea id="checkin-text" placeholder="e.g. Going well, just started the second problem."></textarea>
+    <p class="muted" id="checkin-status"></p>
+    <div class="actions">
+      <button id="checkin-ok" class="primary">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- Complete session modal -->
+<div class="modal-backdrop hidden" id="modal-complete">
+  <div class="modal">
+    <h2>Session Complete</h2>
+    <p id="complete-heading"></p>
+    <div class="row between">
+      <label style="margin:0;">How did it go?</label>
+      <button id="complete-mic" class="mic-btn">🎤 Record</button>
+    </div>
+    <textarea id="complete-text" placeholder="e.g. Solved two binary search problems but struggled with identifying the search space."></textarea>
+    <p class="muted">Not finished? Type/say how much more time you need, e.g. "10 more minutes", then click Need More Time.</p>
+    <p class="muted" id="complete-status"></p>
+    <div class="actions">
+      <button id="complete-extend">Need More Time</button>
+      <button id="complete-ok" class="primary">OK</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -5,3 +5,4 @@ data/mentor.db
 .env
 logs/
 .claude/settings.local.json
+web/focusmentor.db

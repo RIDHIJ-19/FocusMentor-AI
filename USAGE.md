@@ -1,5 +1,103 @@
 # Using FocusMentor AI
 
+The web version is the primary way to use this app now. The desktop app
+still works (see the bottom of this file) but isn't being actively
+developed anymore.
+
+## Running it locally
+
+```powershell
+python -m venv .venv
+.venv\Scripts\pip install -r web/requirements.txt
+.venv\Scripts\uvicorn web.main:app --reload
+```
+
+Open `http://127.0.0.1:8000`. Same dark space theme, same three tabs
+(🚀 Plan / 📊 Dashboard / ⚙️ Settings) as the desktop app.
+
+**Data is session-scoped**: it lives in `web/focusmentor.db` and resets
+whenever the server restarts (locally, that means every time you stop and
+restart `uvicorn`; on Render's free tier, every redeploy and every
+idle-restart). That's intentional — see PLAN.md — not a bug.
+
+## Planning your day
+
+Same as the desktop app: **+ Add Task** for one at a time, or **Plan with
+AI** to describe your whole day in one go ("I want to spend 2 hours on DSA,
+3 hours on my AI project, and 1 hour reading research papers") and review
+the parsed checklist before adding. Click **🎤 Record** to speak instead of
+typing — your browser will ask for microphone permission the first time.
+
+Without a `GROQ_API_KEY` configured on the server, planning falls back to a
+free, offline pattern-matching parser automatically — no signup needed,
+nothing breaks.
+
+## Running a session
+
+Select a task, click **Start Selected**. The countdown runs in the browser
+tab (based on the server-recorded start time, so switching tabs or
+minimizing doesn't lose accuracy — it catches up the moment you come back).
+
+- **Pause / Resume** — freezes the countdown exactly where it is.
+- **Finish Early** — triggers the full completion flow immediately instead
+  of waiting out the clock.
+- **Mid-session check-ins** fire roughly every quarter of the task's
+  duration (a 1-hour task checks in every ~15 min), same as the desktop
+  app. Tasks under 15 minutes don't get any.
+- **Need More Time** — on the completion prompt, type or say something like
+  *"give me 10 more minutes"* and click **Need More Time** instead of OK to
+  keep the session going.
+- **AI-judged completion** — once you submit your "how did it go" note, the
+  app judges whether you hit your goal and responds with a cheerful jingle
+  + upbeat line (success), a stern buzz + blunt line (fell short), or
+  nothing extra if the note's too vague to tell.
+
+## Voice, notifications, and spoken announcements
+
+All browser-native, no installs:
+
+- **Voice input** — `MediaRecorder` captures your mic, uploads to the
+  server, which forwards it to Groq's free Whisper API (requires a server
+  `GROQ_API_KEY`; without one, typing still works everywhere).
+- **Spoken announcements** — the Web Speech API speaks session-start,
+  check-in, and completion messages aloud. Toggle in **Settings**.
+- **Browser notifications** — toggle in **Settings** to grant permission;
+  once granted, you'll get real OS-level notifications even when the tab
+  isn't focused (as long as it's still open — see the limitation below).
+
+**Honest limitation:** the timer only advances while the tab (or an
+installed PWA/pinned tab) is open. If you fully close the tab, nothing
+fires until you reopen it — no browser can run a real background process
+the way the old desktop app's system tray did.
+
+## Dashboard
+
+Same as desktop: today's completion %, a checklist, all-time stats, **Get
+Mentor Insight** (AI or local-fallback coaching feedback), and **Recent
+Updates** — a full history of every check-in/completion/extend reply, not
+just the latest one.
+
+## Deploying to Render (free)
+
+1. Push this repo to GitHub (already done if you're reading this from the
+   repo).
+2. On [render.com](https://render.com), **New → Web Service**, connect this
+   GitHub repo. Render will detect `render.yaml` automatically and prefill
+   the build/start commands (`pip install -r web/requirements.txt` /
+   `uvicorn web.main:app --host 0.0.0.0 --port $PORT`).
+3. Under **Environment**, add `GROQ_API_KEY` with your free key from
+   console.groq.com (optional — the app works without it, just with the
+   offline fallbacks instead of AI).
+4. Deploy. Render gives you a public URL. First request after any idle
+   period takes ~10-30s to cold-start (free tier behavior, not a bug).
+5. Remember: data resets on every redeploy and idle-restart (see above) —
+   don't rely on this for long-term history unless you later add a real
+   persistent database.
+
+---
+
+# Desktop app (legacy, still works)
+
 ## Starting the app
 
 ```powershell
