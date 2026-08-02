@@ -1,4 +1,7 @@
 # FocusMentor AI
+## Link : https://focusmentor-ai.onrender.com
+
+
 
 A personal AI mentor that plans your day, times your focus sessions,
 checks in on you while you work, cuts down on drift/distraction, and judges
