@@ -1,5 +1,4 @@
 """Task CRUD + session lifecycle (start/pause/resume/checkin/finish)."""
-from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
@@ -14,6 +13,7 @@ from web.repository import (
     STATUS_IN_PROGRESS,
     TaskRepository,
     UpdateRepository,
+    utc_now_iso,
 )
 from web.services import rule_based_parser
 from web.services.ai_service import AIService, SHORTFALL, SUCCESS
@@ -90,7 +90,7 @@ def start_task(task_id: int):
     if task["status"] == STATUS_COMPLETED:
         raise HTTPException(status_code=400, detail="This task is already completed.")
 
-    started_at = datetime.now().isoformat(timespec="seconds")
+    started_at = utc_now_iso()
     repo.update_status(task_id, STATUS_IN_PROGRESS, started_at=started_at)
     interval = _checkin_interval(task["duration_min"])
     return {

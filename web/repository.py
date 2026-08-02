@@ -4,7 +4,7 @@ Ported from the desktop app's app/db/repository.py + app/db/update_repository.py
 same schema and query style -- see web/db.py for why this is plain sqlite3
 rather than an ORM.
 """
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from typing import List, Optional
 
 from web.db import get_connection
@@ -16,6 +16,19 @@ STATUS_COMPLETED = "completed"
 CHECKIN = "checkin"
 COMPLETE = "complete"
 EXTEND = "extend"
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def utc_now_iso() -> str:
+    """UTC, explicitly offset-tagged (e.g. "...+00:00") -- unlike a naive
+    isoformat() string, this is unambiguous for a browser's Date.parse():
+    without the offset, JS interprets a date-time string as the *browser's*
+    local time, not the server's, silently corrupting every elapsed-time
+    calculation whenever server and client are in different timezones."""
+    return utc_now().isoformat(timespec="seconds")
 
 
 def _task_to_dict(row) -> dict:
@@ -45,7 +58,7 @@ class TaskRepository:
         plan_date: Optional[str] = None,
     ) -> dict:
         plan_date = plan_date or date.today().isoformat()
-        created_at = datetime.now().isoformat(timespec="seconds")
+        created_at = utc_now_iso()
         conn = get_connection()
         try:
             cur = conn.execute(
@@ -111,7 +124,7 @@ class TaskRepository:
         try:
             conn.execute(
                 "UPDATE tasks SET paused_at = ? WHERE id = ?",
-                (datetime.now().isoformat(timespec="seconds"), task_id),
+                (utc_now_iso(), task_id),
             )
             conn.commit()
         finally:
@@ -123,7 +136,7 @@ class TaskRepository:
             row = conn.execute("SELECT paused_at, paused_seconds FROM tasks WHERE id = ?", (task_id,)).fetchone()
             if row and row["paused_at"]:
                 paused_at = datetime.fromisoformat(row["paused_at"])
-                additional = int((datetime.now() - paused_at).total_seconds())
+                additional = int((utc_now() - paused_at).total_seconds())
                 conn.execute(
                     "UPDATE tasks SET paused_at = NULL, paused_seconds = paused_seconds + ? WHERE id = ?",
                     (additional, task_id),
@@ -163,7 +176,7 @@ class TaskRepository:
                 (STATUS_IN_PROGRESS,),
             ).fetchall()
             overdue = []
-            now = datetime.now()
+            now = utc_now()
             for row in rows:
                 task = _task_to_dict(row)
                 if task["paused_at"]:
@@ -219,7 +232,7 @@ class UpdateRepository:
         elapsed_min: Optional[int] = None,
         remaining_min: Optional[int] = None,
     ) -> dict:
-        created_at = datetime.now().isoformat(timespec="seconds")
+        created_at = utc_now_iso()
         conn = get_connection()
         try:
             cur = conn.execute(
@@ -235,7 +248,7 @@ class UpdateRepository:
         return dict(row)
 
     def get_recent(self, days: int = 14) -> List[dict]:
-        since = (datetime.now() - timedelta(days=days)).isoformat(timespec="seconds")
+        since = (utc_now() - timedelta(days=days)).isoformat(timespec="seconds")
         conn = get_connection()
         try:
             rows = conn.execute(
@@ -257,7 +270,7 @@ class TodoRepository:
     and check it off)."""
 
     def create(self, todo_date: str, text: str) -> dict:
-        created_at = datetime.now().isoformat(timespec="seconds")
+        created_at = utc_now_iso()
         conn = get_connection()
         try:
             cur = conn.execute(
@@ -317,7 +330,7 @@ class NoteRepository:
         return row["text"] if row else ""
 
     def save(self, note_date: str, text: str) -> str:
-        updated_at = datetime.now().isoformat(timespec="seconds")
+        updated_at = utc_now_iso()
         conn = get_connection()
         try:
             conn.execute(

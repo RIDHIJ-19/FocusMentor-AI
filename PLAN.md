@@ -422,6 +422,30 @@ pre-parsed number) — one source of truth for duration parsing.
 --port $PORT`, `GROQ_API_KEY` set as a Render env var (optional, same
 offline-fallback behavior as everywhere else in this app if omitted).
 
+## Bug: sessions instantly "finished" on start (DONE — fixed)
+
+Reported symptom: adding/starting a task immediately jumped to the
+completion flow, claiming e.g. "already 30 min done." Root cause was a
+timezone bug specific to the client/server split the web version
+introduced (the desktop app never had this class of bug — one process,
+one clock): `web/repository.py` generated timestamps with naive
+`datetime.now().isoformat()` — no UTC offset. Render's server clock is
+UTC, but a JS date-time string with no offset is parsed by `Date.parse()`
+as the *browser's local time*, not the server's. For a browser several
+hours off from UTC (confirmed with a Node.js repro: a IST/UTC+5:30 browser
+misreads the timestamp by exactly -330 minutes), `app.js`'s
+`elapsedSeconds()` (`Date.now() - startedAtMs`) is instantly thrown off by
+that same offset — enough to blow past `duration_min` on the very first
+tick.
+
+Fix: `web/repository.py` gained `utc_now()`/`utc_now_iso()` helpers
+(`datetime.now(timezone.utc)`, explicit `+00:00` suffix) and every
+`datetime.now()` call site in `repository.py` and
+`routers/tasks.py::start_task` was switched to them, so every timestamp
+sent to the browser is unambiguous regardless of either side's local
+timezone. `Date.parse()` handles an explicit offset correctly in all
+browsers — no frontend change needed once the server stopped omitting it.
+
 ## Sidebar sticky-note to-dos + notes (DONE)
 
 A casual, unscheduled companion to the structured Task/timer system —
