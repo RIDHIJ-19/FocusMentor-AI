@@ -1,68 +1,76 @@
-"""SQLite connection and schema initialization.
+"""Postgres connection and schema initialization (Neon free tier).
 
-Session-scoped by design: on Render's free tier this file lives on
-ephemeral disk and resets on every redeploy/idle-restart. That's accepted
-here (only current-session history is needed for the web version), not a
-bug -- see PLAN.md.
+Switched from the original session-scoped SQLite design after the user
+decided data should survive redeploys/idle-restarts -- Render's free Web
+Service tier has no persistent disk, so SQLite there was always going to
+reset. Neon's free Postgres doesn't expire the way Render's own free
+Postgres does (30-day auto-delete), so it's the one used here.
+
+DATABASE_URL (a Neon connection string) is required -- see web/settings.py.
 """
-import sqlite3
-from pathlib import Path
+import psycopg
+from psycopg.rows import dict_row
 
-DB_PATH = Path(__file__).resolve().parent / "focusmentor.db"
+from web import settings
 
-SCHEMA = """
-CREATE TABLE IF NOT EXISTS tasks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    goal TEXT,
-    plan_date TEXT NOT NULL,
-    start_time TEXT,
-    duration_min INTEGER NOT NULL,
-    status TEXT NOT NULL DEFAULT 'not_started',
-    notes TEXT,
-    created_at TEXT NOT NULL,
-    started_at TEXT,
-    paused_at TEXT,
-    paused_seconds INTEGER NOT NULL DEFAULT 0
-);
+SCHEMA_STATEMENTS = [
+    """
+    CREATE TABLE IF NOT EXISTS tasks (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        goal TEXT,
+        plan_date TEXT NOT NULL,
+        start_time TEXT,
+        duration_min INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'not_started',
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        started_at TEXT,
+        paused_at TEXT,
+        paused_seconds INTEGER NOT NULL DEFAULT 0
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS updates (
+        id SERIAL PRIMARY KEY,
+        task_id INTEGER NOT NULL REFERENCES tasks(id),
+        kind TEXT NOT NULL,
+        elapsed_min INTEGER,
+        remaining_min INTEGER,
+        note TEXT,
+        created_at TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS todos (
+        id SERIAL PRIMARY KEY,
+        todo_date TEXT NOT NULL,
+        text TEXT NOT NULL,
+        done INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS notes (
+        note_date TEXT PRIMARY KEY,
+        text TEXT NOT NULL DEFAULT '',
+        updated_at TEXT NOT NULL
+    )
+    """,
+]
 
-CREATE TABLE IF NOT EXISTS updates (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    task_id INTEGER NOT NULL,
-    kind TEXT NOT NULL,
-    elapsed_min INTEGER,
-    remaining_min INTEGER,
-    note TEXT,
-    created_at TEXT NOT NULL,
-    FOREIGN KEY (task_id) REFERENCES tasks(id)
-);
 
-CREATE TABLE IF NOT EXISTS todos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    todo_date TEXT NOT NULL,
-    text TEXT NOT NULL,
-    done INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS notes (
-    note_date TEXT PRIMARY KEY,
-    text TEXT NOT NULL DEFAULT '',
-    updated_at TEXT NOT NULL
-);
-"""
-
-
-def get_connection() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+def get_connection() -> psycopg.Connection:
+    conn = psycopg.connect(settings.get_database_url(), row_factory=dict_row)
     return conn
 
 
 def init_db() -> None:
     conn = get_connection()
     try:
-        conn.executescript(SCHEMA)
+        with conn.cursor() as cur:
+            for statement in SCHEMA_STATEMENTS:
+                cur.execute(statement)
         conn.commit()
     finally:
         conn.close()
