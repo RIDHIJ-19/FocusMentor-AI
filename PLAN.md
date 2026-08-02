@@ -422,6 +422,33 @@ pre-parsed number) — one source of truth for duration parsing.
 --port $PORT`, `GROQ_API_KEY` set as a Render env var (optional, same
 offline-fallback behavior as everywhere else in this app if omitted).
 
+## Sidebar sticky-note to-dos + notes (DONE)
+
+A casual, unscheduled companion to the structured Task/timer system —
+"on the side," no duration/timer/AI judging, just jot something down for a
+given date and check it off (strikethrough) or delete it. Deliberately
+kept as a second, separate concern rather than bolted onto `tasks`:
+
+- **Schema**: two new tables in `web/db.py` — `todos` (`id, todo_date,
+  text, done, created_at`) and `notes` (`note_date` PRIMARY KEY, `text`,
+  `updated_at` — one free-form scratchpad per date, upserted via SQLite's
+  `ON CONFLICT ... DO UPDATE`).
+- **Repositories**: `TodoRepository` / `NoteRepository` in
+  `web/repository.py`, same hand-written `sqlite3` style as the rest.
+- **API**: `web/routers/todos.py` — `GET/POST /api/todos`,
+  `POST /api/todos/{id}/toggle`, `DELETE /api/todos/{id}`,
+  `GET/POST /api/notes` (both routers, `router` and `notes_router`, live in
+  this one file and are both registered in `main.py`).
+- **UI**: `.layout` in `index.html`/`style.css` became a two-column flex
+  (`#app` + `<aside class="sidebar">`), with the sidebar visually placed
+  first via `order: -1` rather than reordering the DOM — kept `#app`'s
+  markup/JS untouched. The sticky-note styling (amber left-border accent)
+  is deliberately distinct from the app's cyan/magenta space palette so it
+  reads as a separate, casual surface. `app.js`'s `initTodos()` /
+  `refreshTodos()` / `refreshNote()` / `saveNote()` load both the checklist
+  and the note together whenever the sidebar's date picker changes; notes
+  save on blur or via an explicit Save button.
+
 ## Phase 4 — Intelligent Mentor (not started)
 
 - Long-term memory / pattern analysis over the `tasks` table (e.g. with

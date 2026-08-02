@@ -632,6 +632,96 @@ function initSettings() {
   });
 }
 
+/* ---------- Sidebar to-dos (sticky note) ---------- */
+
+function todayISO() {
+  const d = new Date();
+  const offset = d.getTimezoneOffset();
+  return new Date(d.getTime() - offset * 60000).toISOString().slice(0, 10);
+}
+
+async function refreshTodos() {
+  const date = document.getElementById("todo-date").value || todayISO();
+  const todos = await api("GET", `/api/todos?date=${encodeURIComponent(date)}`);
+  const list = document.getElementById("todo-list");
+  list.innerHTML = "";
+  if (!todos.length) {
+    const li = document.createElement("li");
+    li.className = "todo-empty";
+    li.textContent = "Nothing jotted down for this day yet.";
+    list.appendChild(li);
+    return;
+  }
+  for (const todo of todos) {
+    const li = document.createElement("li");
+    li.className = "todo-item" + (todo.done ? " done" : "");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = !!todo.done;
+    checkbox.addEventListener("change", async () => {
+      await api("POST", `/api/todos/${todo.id}/toggle`);
+      refreshTodos();
+    });
+    const text = document.createElement("span");
+    text.className = "todo-text";
+    text.textContent = todo.text;
+    const remove = document.createElement("button");
+    remove.className = "todo-remove";
+    remove.textContent = "×";
+    remove.title = "Remove";
+    remove.addEventListener("click", async () => {
+      await api("DELETE", `/api/todos/${todo.id}`);
+      refreshTodos();
+    });
+    li.append(checkbox, text, remove);
+    list.appendChild(li);
+  }
+}
+
+async function refreshNote() {
+  const date = document.getElementById("todo-date").value || todayISO();
+  const result = await api("GET", `/api/notes?date=${encodeURIComponent(date)}`);
+  document.getElementById("notes-text").value = result.text || "";
+  document.getElementById("notes-status").textContent = "";
+}
+
+async function saveNote() {
+  const date = document.getElementById("todo-date").value || todayISO();
+  const text = document.getElementById("notes-text").value;
+  await api("POST", "/api/notes", { date, text });
+  const status = document.getElementById("notes-status");
+  status.textContent = "Saved.";
+  setTimeout(() => { if (status.textContent === "Saved.") status.textContent = ""; }, 2500);
+}
+
+function initTodos() {
+  const dateInput = document.getElementById("todo-date");
+  dateInput.value = todayISO();
+  dateInput.addEventListener("change", () => {
+    refreshTodos();
+    refreshNote();
+  });
+
+  const textInput = document.getElementById("todo-text");
+  async function addTodo() {
+    const text = textInput.value.trim();
+    if (!text) return;
+    await api("POST", "/api/todos", { date: dateInput.value || todayISO(), text });
+    textInput.value = "";
+    refreshTodos();
+  }
+  document.getElementById("todo-add").addEventListener("click", addTodo);
+  textInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addTodo();
+  });
+
+  document.getElementById("notes-save").addEventListener("click", saveNote);
+  document.getElementById("notes-text").addEventListener("blur", saveNote);
+
+  refreshTodos();
+  refreshNote();
+}
+
 /* ---------- Init ---------- */
 
 document.getElementById("btn-start").addEventListener("click", startSelected);
@@ -645,4 +735,5 @@ initAddTask();
 initPlanAI();
 initInsight();
 initSettings();
+initTodos();
 refreshTasks();

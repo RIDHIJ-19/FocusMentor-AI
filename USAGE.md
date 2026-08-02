@@ -77,6 +77,21 @@ Mentor Insight** (AI or local-fallback coaching feedback), and **Recent
 Updates** — a full history of every check-in/completion/extend reply, not
 just the latest one.
 
+## Sidebar: quick to-dos and notes
+
+On the left, separate from the structured task/timer system, there's a
+sticky-note-style sidebar for casual, unscheduled items:
+
+- Pick a **date**, type something in the box and hit **+** (or Enter) to
+  add a quick to-do for that day.
+- Check it off to strike it through; click **×** to remove it.
+- Below the checklist, a **Notes / comments** box is a free-form scratchpad
+  for that same date — jot down anything that doesn't fit as a checklist
+  item. It saves automatically when you click away, or click **Save**.
+
+This is intentionally lightweight — no duration, no timer, no AI judging,
+just plan → jot → check off.
+
 ## Deploying to Render (free)
 
 1. Push this repo to GitHub (already done if you're reading this from the

@@ -249,3 +249,83 @@ class UpdateRepository:
         finally:
             conn.close()
         return [dict(r) for r in rows]
+
+
+class TodoRepository:
+    """Casual, unscheduled sticky-note to-dos by date -- separate from the
+    structured Task system (no duration/timer/AI judging, just jot it down
+    and check it off)."""
+
+    def create(self, todo_date: str, text: str) -> dict:
+        created_at = datetime.now().isoformat(timespec="seconds")
+        conn = get_connection()
+        try:
+            cur = conn.execute(
+                "INSERT INTO todos (todo_date, text, done, created_at) VALUES (?, ?, 0, ?)",
+                (todo_date, text, created_at),
+            )
+            conn.commit()
+            todo_id = cur.lastrowid
+            row = conn.execute("SELECT * FROM todos WHERE id = ?", (todo_id,)).fetchone()
+        finally:
+            conn.close()
+        return dict(row)
+
+    def get_by_date(self, todo_date: str) -> List[dict]:
+        conn = get_connection()
+        try:
+            rows = conn.execute(
+                "SELECT * FROM todos WHERE todo_date = ? ORDER BY id ASC", (todo_date,)
+            ).fetchall()
+        finally:
+            conn.close()
+        return [dict(r) for r in rows]
+
+    def toggle_done(self, todo_id: int) -> Optional[dict]:
+        conn = get_connection()
+        try:
+            row = conn.execute("SELECT done FROM todos WHERE id = ?", (todo_id,)).fetchone()
+            if not row:
+                return None
+            new_done = 0 if row["done"] else 1
+            conn.execute("UPDATE todos SET done = ? WHERE id = ?", (new_done, todo_id))
+            conn.commit()
+            updated = conn.execute("SELECT * FROM todos WHERE id = ?", (todo_id,)).fetchone()
+        finally:
+            conn.close()
+        return dict(updated)
+
+    def delete(self, todo_id: int) -> None:
+        conn = get_connection()
+        try:
+            conn.execute("DELETE FROM todos WHERE id = ?", (todo_id,))
+            conn.commit()
+        finally:
+            conn.close()
+
+
+class NoteRepository:
+    """One free-form scratchpad note per date -- a spot for comments that
+    don't fit as a checklist item."""
+
+    def get(self, note_date: str) -> str:
+        conn = get_connection()
+        try:
+            row = conn.execute("SELECT text FROM notes WHERE note_date = ?", (note_date,)).fetchone()
+        finally:
+            conn.close()
+        return row["text"] if row else ""
+
+    def save(self, note_date: str, text: str) -> str:
+        updated_at = datetime.now().isoformat(timespec="seconds")
+        conn = get_connection()
+        try:
+            conn.execute(
+                """INSERT INTO notes (note_date, text, updated_at) VALUES (?, ?, ?)
+                   ON CONFLICT(note_date) DO UPDATE SET text = excluded.text, updated_at = excluded.updated_at""",
+                (note_date, text, updated_at),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        return text

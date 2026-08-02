@@ -19,7 +19,8 @@
       "Bash(curl -s http://127.0.0.1:8000/api/tasks)",
       "Bash(curl -s http://127.0.0.1:8000/api/motivation/session_start)",
       "Bash(curl -s -X POST http://127.0.0.1:8000/api/tasks/parse -H \"Content-Type: application/json\" -d '{\"text\": \"2 hours on DSA\"}')",
-      "Bash(\".venv/Scripts/python.exe\" -m py_compile web/*.py web/services/*.py web/routers/*.py)"
+      "Bash(\".venv/Scripts/python.exe\" -m py_compile web/*.py web/services/*.py web/routers/*.py)",
+      "Bash(\".venv/Scripts/python.exe\" -m uvicorn --help)"
     ]
   }
 }

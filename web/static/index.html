@@ -8,6 +8,7 @@
 </head>
 <body>
 <canvas id="starfield"></canvas>
+<div class="layout">
 <div id="app">
   <h1>🧠 FocusMentor AI</h1>
 
@@ -72,6 +73,28 @@
 
     <p class="muted">AI features (planning, transcription, insight, completion judging) use a Groq key configured on the server. Without one, planning and completion judging fall back to free offline logic.</p>
   </section>
+</div>
+
+<aside class="sidebar">
+  <div class="sticky-note">
+    <div class="row between" style="margin-bottom:8px;">
+      <span class="sticky-title">📝 To-dos</span>
+      <input type="date" id="todo-date">
+    </div>
+    <div class="row" style="margin-bottom:10px;">
+      <input type="text" id="todo-text" placeholder="Jot something down..." class="stretch">
+      <button id="todo-add">+</button>
+    </div>
+    <ul class="todo-list" id="todo-list"></ul>
+
+    <div class="sticky-title" style="margin-top:14px;">💬 Notes / comments</div>
+    <textarea id="notes-text" placeholder="Anything else worth remembering about this day..."></textarea>
+    <div class="row" style="justify-content:flex-end; margin-top:6px;">
+      <span class="muted" id="notes-status"></span>
+      <button id="notes-save">Save</button>
+    </div>
+  </div>
+</aside>
 </div>
 
 <div class="toast-stack" id="toast-stack"></div>

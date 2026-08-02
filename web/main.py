@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 
 from web.db import init_db
 from web.repository import TaskRepository
-from web.routers import tasks, updates
+from web.routers import tasks, todos, updates
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -31,6 +31,8 @@ def on_startup() -> None:
 
 app.include_router(tasks.router)
 app.include_router(updates.router)
+app.include_router(todos.router)
+app.include_router(todos.notes_router)
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
