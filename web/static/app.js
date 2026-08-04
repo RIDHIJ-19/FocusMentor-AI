@@ -484,10 +484,16 @@ async function triggerCheckin(elapsedMin, remainingMin) {
 
   const okBtn = document.getElementById("checkin-ok");
   okBtn.onclick = async () => {
-    const note = document.getElementById("checkin-text").value.trim();
-    await api("POST", `/api/tasks/${a.id}/checkin`, { note, elapsed_min: elapsedMin, remaining_min: remainingMin });
-    hideModal("modal-checkin");
-    refreshTasks();
+    if (okBtn.disabled) return;
+    okBtn.disabled = true;
+    try {
+      const note = document.getElementById("checkin-text").value.trim();
+      await api("POST", `/api/tasks/${a.id}/checkin`, { note, elapsed_min: elapsedMin, remaining_min: remainingMin });
+      hideModal("modal-checkin");
+      refreshTasks();
+    } finally {
+      okBtn.disabled = false;
+    }
   };
 }
 
@@ -521,37 +527,67 @@ async function triggerSessionEnd() {
   const extendBtn = document.getElementById("complete-extend");
 
   okBtn.onclick = async () => {
-    const note = document.getElementById("complete-text").value.trim();
-    const result = await api("POST", `/api/tasks/${a.id}/finish`, { note });
-    hideModal("modal-complete");
-    state.active = null;
-    sessionEnding = false;
-    updateSessionButtons();
-    document.getElementById("session-label").textContent = "No active session.";
-    document.title = "FocusMentor AI";
+    if (okBtn.disabled) return; // guard against a slow/cold-starting server + an impatient double click
+    okBtn.disabled = true;
+    extendBtn.disabled = true;
+    try {
+      const note = document.getElementById("complete-text").value.trim();
+      const result = await api("POST", `/api/tasks/${a.id}/finish`, { note });
+      hideModal("modal-complete");
+      state.active = null;
+      sessionEnding = false;
+      updateSessionButtons();
+      document.getElementById("session-label").textContent = "No active session.";
+      document.title = "FocusMentor AI";
 
-    if (result.is_success) {
-      playSuccessJingle();
-      announce(await motivationLine("celebration"));
-    } else if (result.is_shortfall) {
-      playSternAlert();
-      announce(await motivationLine("fell_short"));
+      if (result.is_success) {
+        playSuccessJingle();
+        announce(await motivationLine("celebration"));
+      } else if (result.is_shortfall) {
+        playSternAlert();
+        announce(await motivationLine("fell_short"));
+      }
+      refreshTasks();
+    } catch (exc) {
+      document.getElementById("complete-status").textContent = exc.data?.detail || exc.message;
+    } finally {
+      okBtn.disabled = false;
+      extendBtn.disabled = false;
     }
-    refreshTasks();
   };
 
   extendBtn.onclick = async () => {
-    const note = document.getElementById("complete-text").value.trim();
+    if (extendBtn.disabled) return; // same double-submit guard as okBtn above
+    extendBtn.disabled = true;
+    okBtn.disabled = true;
     try {
+      const note = document.getElementById("complete-text").value.trim();
       const result = await api("POST", `/api/tasks/${a.id}/finish`, { note, extend_requested: true });
       hideModal("modal-complete");
       sessionEnding = false;
       a.durationMin += result.extend_minutes;
       a.checkinIntervalMin = result.checkin_interval_min;
+
+      // The new interval is derived from just the (small) extension amount,
+      // so replaying it against the full elapsed time would treat every
+      // already-past minute mark as a freshly-crossed, never-fired
+      // threshold -- flooding triggerCheckin() for all of them in the very
+      // next tick. Pre-mark everything up to "now" as already fired so only
+      // genuinely future crossings announce.
+      const elapsedMinNow = Math.floor(elapsedSeconds() / 60);
+      if (a.checkinIntervalMin > 0) {
+        for (let m = a.checkinIntervalMin; m <= elapsedMinNow; m += a.checkinIntervalMin) {
+          a.firedCheckinMinutes.add(m);
+        }
+      }
+
       announce(`Got it — ${result.extend_minutes} more minutes on ${a.name}.`);
       refreshTasks();
     } catch (exc) {
       document.getElementById("complete-status").textContent = exc.data?.detail || exc.message;
+    } finally {
+      extendBtn.disabled = false;
+      okBtn.disabled = false;
     }
   };
 }
