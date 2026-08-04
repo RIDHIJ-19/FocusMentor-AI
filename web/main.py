@@ -13,6 +13,7 @@ load_dotenv(Path(__file__).resolve().parent / ".env")
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.types import Scope
 
 from web.db import init_db
 from web.repository import TaskRepository
@@ -22,6 +23,19 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 logger = logging.getLogger(__name__)
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+
+
+class NoCacheStaticFiles(StaticFiles):
+    """Forces the browser to revalidate app.js/style.css on every load
+    instead of silently serving a stale cached copy after a deploy -- bit
+    us once already: a bug fix was pushed and live, but a user's browser
+    kept running the old cached JS and "still saw" the fixed bug."""
+
+    async def get_response(self, path: str, scope: Scope):
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
 
 app = FastAPI(title="FocusMentor AI")
 
@@ -42,7 +56,7 @@ app.include_router(updates.router)
 app.include_router(todos.router)
 app.include_router(todos.notes_router)
 
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.mount("/static", NoCacheStaticFiles(directory=STATIC_DIR), name="static")
 
 
 @app.get("/")
