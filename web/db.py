@@ -33,13 +33,31 @@ SCHEMA_STATEMENTS = [
     """
     CREATE TABLE IF NOT EXISTS updates (
         id SERIAL PRIMARY KEY,
-        task_id INTEGER NOT NULL REFERENCES tasks(id),
+        task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
         kind TEXT NOT NULL,
         elapsed_min INTEGER,
         remaining_min INTEGER,
         note TEXT,
         created_at TEXT NOT NULL
     )
+    """,
+    # Migration for DBs created before ON DELETE CASCADE was added above --
+    # SQLite (the original dev DB) never enforced this FK at all, so a task
+    # delete that left orphaned "updates" rows behind was silently fine
+    # there; Postgres enforces it, which crash-looped the app on startup
+    # (delete_overdue_in_progress deleting a task that still had updates).
+    """
+    DO $$
+    BEGIN
+        IF EXISTS (
+            SELECT 1 FROM information_schema.referential_constraints
+            WHERE constraint_name = 'updates_task_id_fkey' AND delete_rule = 'NO ACTION'
+        ) THEN
+            ALTER TABLE updates DROP CONSTRAINT updates_task_id_fkey;
+            ALTER TABLE updates ADD CONSTRAINT updates_task_id_fkey
+                FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE;
+        END IF;
+    END $$;
     """,
     """
     CREATE TABLE IF NOT EXISTS todos (
