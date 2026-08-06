@@ -202,6 +202,33 @@ function initStarfield() {
   requestAnimationFrame(draw);
 }
 
+/* ---------- Global date picker (drives Plan + Dashboard tabs) ---------- */
+
+function updatePlanDateHeadings() {
+  const isToday = state.planDate === todayISO();
+  document.getElementById("plan-heading").textContent = isToday ? "Today's Plan" : `Plan for ${state.planDate}`;
+  document.getElementById("dashboard-heading").textContent = isToday ? "Today's Progress" : `Progress for ${state.planDate}`;
+}
+
+function initGlobalDate() {
+  state.planDate = todayISO();
+  const input = document.getElementById("global-date");
+  input.value = state.planDate;
+  updatePlanDateHeadings();
+
+  input.addEventListener("change", () => {
+    state.planDate = input.value || todayISO();
+    updatePlanDateHeadings();
+    refreshTasks();
+    if (document.getElementById("tab-dashboard").classList.contains("active")) refreshDashboard();
+  });
+
+  document.getElementById("global-date-today").addEventListener("click", () => {
+    input.value = todayISO();
+    input.dispatchEvent(new Event("change"));
+  });
+}
+
 /* ---------- Tabs ---------- */
 
 function initTabs() {
@@ -225,6 +252,7 @@ function hideModal(id) { document.getElementById(id).classList.add("hidden"); }
 
 const state = {
   tasks: [],
+  planDate: null, // set from #global-date at init, defaults to today; drives both Plan and Dashboard tabs
   selectedTaskIds: new Set(), // ctrl/cmd-click (or shift-click) toggles membership for bulk delete
   active: null, // { id, name, goal, durationMin, startedAt (ms), pausedSeconds, isPaused, pausedAtMs, checkinIntervalMin, firedCheckinMinutes: Set }
 };
@@ -232,7 +260,7 @@ const state = {
 /* ---------- Task list (Plan tab) ---------- */
 
 async function refreshTasks() {
-  state.tasks = await api("GET", "/api/tasks");
+  state.tasks = await api("GET", `/api/tasks?date=${state.planDate}`);
   const validIds = new Set(state.tasks.map((t) => t.id));
   for (const id of state.selectedTaskIds) {
     if (!validIds.has(id)) state.selectedTaskIds.delete(id);
@@ -296,7 +324,7 @@ function initAddTask() {
     const start_time = hasStart.checked ? document.getElementById("add-start-time").value : null;
     addTaskOkBtn.disabled = true;
     try {
-      await api("POST", "/api/tasks", { name, goal, duration_min, start_time });
+      await api("POST", "/api/tasks", { name, goal, duration_min, start_time, plan_date: state.planDate });
       hideModal("modal-add-task");
       refreshTasks();
     } catch (exc) {
@@ -365,6 +393,7 @@ function initPlanAI() {
     for (const t of checked) {
       await api("POST", "/api/tasks", {
         name: t.name, goal: t.goal, duration_min: t.duration_min, start_time: t.start_time,
+        plan_date: state.planDate,
       });
     }
     hideModal("modal-plan-ai");
@@ -639,7 +668,7 @@ function todayTimeSummary(completedMin, completedCount) {
 }
 
 async function refreshDashboard() {
-  const data = await api("GET", "/api/dashboard");
+  const data = await api("GET", `/api/dashboard?date=${state.planDate}`);
   const total = data.tasks.length;
   const completed = data.tasks.filter((t) => t.status === "completed").length;
   const pct = total ? Math.round((completed / total) * 100) : 0;
@@ -815,6 +844,7 @@ document.getElementById("btn-pause").addEventListener("click", pauseResume);
 document.getElementById("btn-finish-early").addEventListener("click", finishEarly);
 
 initStarfield();
+initGlobalDate();
 initTabs();
 initAddTask();
 initPlanAI();

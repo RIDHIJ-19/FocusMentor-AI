@@ -1,4 +1,6 @@
 """Dashboard data, mentor insight, and audio transcription."""
+from typing import Optional
+
 from fastapi import APIRouter, File, UploadFile
 
 from web.repository import TaskRepository, UpdateRepository
@@ -18,8 +20,8 @@ def motivation_line(category: str):
 
 
 @router.get("/dashboard")
-def dashboard():
-    tasks = repo.get_by_date()
+def dashboard(date: Optional[str] = None):
+    tasks = repo.get_by_date(date)
     return {
         "tasks": tasks,
         "completed_all_time": repo.count_completed_all_time(),

@@ -30,6 +30,7 @@ class CreateTaskBody(BaseModel):
     goal: Optional[str] = None
     duration_min: int
     start_time: Optional[str] = None
+    plan_date: Optional[str] = None
 
 
 class ParseBody(BaseModel):
@@ -54,14 +55,18 @@ def _checkin_interval(duration_min: int) -> int:
 
 
 @router.get("")
-def list_tasks():
-    return repo.get_by_date()
+def list_tasks(date: Optional[str] = None):
+    return repo.get_by_date(date)
 
 
 @router.post("")
 def create_task(body: CreateTaskBody):
     return repo.create(
-        name=body.name, goal=body.goal, duration_min=body.duration_min, start_time=body.start_time
+        name=body.name,
+        goal=body.goal,
+        duration_min=body.duration_min,
+        start_time=body.start_time,
+        plan_date=body.plan_date,
     )
 
 
