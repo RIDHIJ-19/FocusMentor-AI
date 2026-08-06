@@ -225,7 +225,7 @@ function hideModal(id) { document.getElementById(id).classList.add("hidden"); }
 
 const state = {
   tasks: [],
-  selectedTaskId: null,
+  selectedTaskIds: new Set(), // ctrl/cmd-click (or shift-click) toggles membership for bulk delete
   active: null, // { id, name, goal, durationMin, startedAt (ms), pausedSeconds, isPaused, pausedAtMs, checkinIntervalMin, firedCheckinMinutes: Set }
 };
 
@@ -233,6 +233,10 @@ const state = {
 
 async function refreshTasks() {
   state.tasks = await api("GET", "/api/tasks");
+  const validIds = new Set(state.tasks.map((t) => t.id));
+  for (const id of state.selectedTaskIds) {
+    if (!validIds.has(id)) state.selectedTaskIds.delete(id);
+  }
   const list = document.getElementById("task-list");
   list.innerHTML = "";
   for (const task of state.tasks) {
@@ -243,9 +247,17 @@ async function refreshTasks() {
     li.textContent = text;
     li.dataset.id = task.id;
     li.className = `status-${task.status}`;
-    if (task.id === state.selectedTaskId) li.classList.add("selected");
-    li.addEventListener("click", () => {
-      state.selectedTaskId = task.id;
+    if (state.selectedTaskIds.has(task.id)) li.classList.add("selected");
+    li.addEventListener("click", (e) => {
+      if (e.ctrlKey || e.metaKey || e.shiftKey) {
+        if (state.selectedTaskIds.has(task.id)) {
+          state.selectedTaskIds.delete(task.id);
+        } else {
+          state.selectedTaskIds.add(task.id);
+        }
+      } else {
+        state.selectedTaskIds = new Set([task.id]);
+      }
       refreshTasks();
     });
     list.appendChild(li);
@@ -369,9 +381,11 @@ function updateSessionButtons() {
 }
 
 async function startSelected() {
-  if (!state.selectedTaskId) { toast("Select a task first."); return; }
+  if (state.selectedTaskIds.size === 0) { toast("Select a task first."); return; }
+  if (state.selectedTaskIds.size > 1) { toast("Select only one task to start."); return; }
   if (state.active) { toast("A session is already running."); return; }
-  const task = state.tasks.find((t) => t.id === state.selectedTaskId);
+  const [selectedId] = state.selectedTaskIds;
+  const task = state.tasks.find((t) => t.id === selectedId);
   if (!task) return;
   if (task.status === "completed") { toast("This task is already completed."); return; }
 
@@ -395,14 +409,19 @@ async function startSelected() {
 }
 
 async function deleteSelected() {
-  if (!state.selectedTaskId) return;
-  try {
-    await api("DELETE", `/api/tasks/${state.selectedTaskId}`);
-    state.selectedTaskId = null;
-    refreshTasks();
-  } catch (exc) {
-    toast(exc.message);
+  if (state.selectedTaskIds.size === 0) return;
+  const ids = [...state.selectedTaskIds];
+  const failures = [];
+  for (const id of ids) {
+    try {
+      await api("DELETE", `/api/tasks/${id}`);
+      state.selectedTaskIds.delete(id);
+    } catch (exc) {
+      failures.push(exc.message);
+    }
   }
+  if (failures.length) toast(failures.join(" | "));
+  refreshTasks();
 }
 
 async function pauseResume() {
