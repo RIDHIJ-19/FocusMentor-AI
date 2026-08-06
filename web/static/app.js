@@ -264,20 +264,34 @@ function initAddTask() {
     document.getElementById("add-name").value = "";
     document.getElementById("add-goal").value = "";
     document.getElementById("add-duration").value = "60";
+    document.getElementById("add-task-status").textContent = "";
     hasStart.checked = false;
     document.getElementById("add-start-time").disabled = true;
     showModal("modal-add-task");
   });
   document.getElementById("add-task-cancel").addEventListener("click", () => hideModal("modal-add-task"));
-  document.getElementById("add-task-ok").addEventListener("click", async () => {
+  const addTaskOkBtn = document.getElementById("add-task-ok");
+  addTaskOkBtn.addEventListener("click", async () => {
+    if (addTaskOkBtn.disabled) return;
+    const statusEl = document.getElementById("add-task-status");
     const name = document.getElementById("add-name").value.trim();
-    if (!name) return;
+    if (!name) {
+      statusEl.textContent = "Give the task a name first.";
+      return;
+    }
     const goal = document.getElementById("add-goal").value.trim() || null;
     const duration_min = parseInt(document.getElementById("add-duration").value, 10) || 30;
     const start_time = hasStart.checked ? document.getElementById("add-start-time").value : null;
-    await api("POST", "/api/tasks", { name, goal, duration_min, start_time });
-    hideModal("modal-add-task");
-    refreshTasks();
+    addTaskOkBtn.disabled = true;
+    try {
+      await api("POST", "/api/tasks", { name, goal, duration_min, start_time });
+      hideModal("modal-add-task");
+      refreshTasks();
+    } catch (exc) {
+      statusEl.textContent = exc.data?.detail || exc.message;
+    } finally {
+      addTaskOkBtn.disabled = false;
+    }
   });
 }
 
