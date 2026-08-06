@@ -132,6 +132,12 @@ ul.task-list li, ul.update-list li {
 }
 ul.task-list li:last-child, ul.update-list li:last-child { border-bottom: none; }
 ul.task-list li:hover { background: var(--bg-field); }
+ul.task-list li.selected {
+  background: rgba(34, 211, 238, 0.16);
+  border-left: 3px solid var(--accent-cyan);
+  padding-left: 3px;
+}
+ul.task-list li.selected:hover { background: rgba(34, 211, 238, 0.22); }
 
 .status-dot { display: inline-block; width: 1.1em; }
 .status-completed { color: var(--accent-green); }

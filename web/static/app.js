@@ -243,7 +243,7 @@ async function refreshTasks() {
     li.textContent = text;
     li.dataset.id = task.id;
     li.className = `status-${task.status}`;
-    if (task.id === state.selectedTaskId) li.style.background = "var(--bg-field)";
+    if (task.id === state.selectedTaskId) li.classList.add("selected");
     li.addEventListener("click", () => {
       state.selectedTaskId = task.id;
       refreshTasks();
