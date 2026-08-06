@@ -98,10 +98,22 @@ class TaskRepository:
         status: str,
         notes: Optional[str] = None,
         started_at: Optional[str] = None,
+        plan_date: Optional[str] = None,
     ) -> None:
         conn = get_connection()
         try:
-            if started_at is not None:
+            if started_at is not None and plan_date is not None:
+                # Re-file the task under the day it was actually started, not
+                # the day it happened to be added/planned -- an overnight
+                # session (start 10pm, finish 2am) should stay attributed to
+                # the start date, using the browser's *local* calendar date
+                # rather than the server's UTC one to avoid a spurious
+                # midnight rollover for timezones far from UTC.
+                conn.execute(
+                    "UPDATE tasks SET status = %s, started_at = %s, plan_date = %s WHERE id = %s",
+                    (status, started_at, plan_date, task_id),
+                )
+            elif started_at is not None:
                 conn.execute(
                     "UPDATE tasks SET status = %s, started_at = %s WHERE id = %s",
                     (status, started_at, task_id),

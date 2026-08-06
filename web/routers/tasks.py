@@ -37,6 +37,10 @@ class ParseBody(BaseModel):
     text: str
 
 
+class StartBody(BaseModel):
+    local_date: Optional[str] = None
+
+
 class CheckinBody(BaseModel):
     note: str = ""
     elapsed_min: int
@@ -88,7 +92,7 @@ def delete_task(task_id: int):
 
 
 @router.post("/{task_id}/start")
-def start_task(task_id: int):
+def start_task(task_id: int, body: StartBody = StartBody()):
     task = repo.get_by_id(task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -96,13 +100,14 @@ def start_task(task_id: int):
         raise HTTPException(status_code=400, detail="This task is already completed.")
 
     started_at = utc_now_iso()
-    repo.update_status(task_id, STATUS_IN_PROGRESS, started_at=started_at)
+    repo.update_status(task_id, STATUS_IN_PROGRESS, started_at=started_at, plan_date=body.local_date)
     interval = _checkin_interval(task["duration_min"])
     return {
         "task_id": task_id,
         "started_at": started_at,
         "duration_min": task["duration_min"],
         "checkin_interval_min": interval,
+        "plan_date": body.local_date or task["plan_date"],
     }
 
 

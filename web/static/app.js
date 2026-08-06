@@ -418,7 +418,15 @@ async function startSelected() {
   if (!task) return;
   if (task.status === "completed") { toast("This task is already completed."); return; }
 
-  const result = await api("POST", `/api/tasks/${task.id}/start`);
+  // File the task under whatever calendar day it's actually *started* on,
+  // in the user's local time -- an overnight session (start 10pm, finish
+  // 2am) should stay under the start date, not roll to the next day.
+  const result = await api("POST", `/api/tasks/${task.id}/start`, { local_date: todayISO() });
+  if (result.plan_date && result.plan_date !== state.planDate) {
+    state.planDate = result.plan_date;
+    document.getElementById("global-date").value = state.planDate;
+    updatePlanDateHeadings();
+  }
   state.active = {
     id: task.id,
     name: task.name,
