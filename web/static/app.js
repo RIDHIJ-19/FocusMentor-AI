@@ -627,6 +627,17 @@ async function triggerSessionEnd() {
 
 /* ---------- Dashboard ---------- */
 
+function todayTimeSummary(completedMin, completedCount) {
+  if (completedCount === 0) {
+    return "No sessions finished yet today — get one done and it'll show up here.";
+  }
+  const h = Math.floor(completedMin / 60);
+  const m = completedMin % 60;
+  const time = h > 0 ? `${h}h ${m}m` : `${m}m`;
+  const plural = completedCount === 1 ? "session" : "sessions";
+  return `You've studied ${time} today across ${completedCount} ${plural}. Keep going.`;
+}
+
 async function refreshDashboard() {
   const data = await api("GET", "/api/dashboard");
   const total = data.tasks.length;
@@ -643,6 +654,11 @@ async function refreshDashboard() {
     li.textContent = `${mark} ${t.name} - ${t.status.replace("_", " ")}`;
     checklist.appendChild(li);
   }
+
+  const completedMin = data.tasks
+    .filter((t) => t.status === "completed")
+    .reduce((sum, t) => sum + t.duration_min, 0);
+  document.getElementById("today-time-summary").textContent = todayTimeSummary(completedMin, completed);
 
   document.getElementById("stat-completed").textContent = `Sessions completed (all time): ${data.completed_all_time}`;
   document.getElementById("stat-days").textContent = `Days with a completed session: ${data.active_days}`;
