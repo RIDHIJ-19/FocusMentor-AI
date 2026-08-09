@@ -71,8 +71,14 @@ def get_line(category: str) -> str:
     lines = _LINES.get(category)
     if not lines:
         return ""
+
     index = random.randrange(len(lines))
-    if len(lines) > 1 and index == _last_index.get(category):
-        index = (index + 1) % len(lines)
+    # Re-roll until it's different from last time (bounded -- a 1-line
+    # category would loop forever otherwise).
+    for _ in range(len(lines)):
+        if index != _last_index.get(category):
+            break
+        index = random.randrange(len(lines))
+
     _last_index[category] = index
     return lines[index]
