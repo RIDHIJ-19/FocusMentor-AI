@@ -1,7 +1,8 @@
 """Real, attributed quotes for notifications/dialogs -- per explicit request,
 swapped out from AI-generated lines. Each entry is "quote text" — source;
 sourced from well-established, widely-verified attributions (classic
-figures, and a couple of Bhagavad Gita verses) rather than invented.
+figures, a couple of Bhagavad Gita verses, and some well-known Hindi movie
+dialogues) rather than invented.
 """
 import random
 from typing import Dict, List
@@ -22,6 +23,8 @@ _LINES: Dict[str, List[str]] = {
         "The secret of getting ahead is getting started. — Mark Twain",
         "You don't have to see the whole staircase, just take the first step. — Martin Luther King Jr.",
         "You have a right to perform your prescribed duty, but you are not entitled to the fruits of your actions. — Bhagavad Gita, 2.47",
+        "Success ke peeche mat bhaago, kaabil bano — safalta jhak maar ke tumhare peeche aayegi. — Rancho, 3 Idiots",
+        "Agar kisi cheez ko dil se chaaho toh puri kaayanat use tumse milaane ki koshish mein lag jaati hai. — Om Shanti Om",
     ],
     CHECKIN: [
         "If you are going through hell, keep going. — Winston Churchill",
@@ -31,6 +34,9 @@ _LINES: Dict[str, List[str]] = {
         "Perform your duty equipoised, abandoning all attachment to success or failure. Such evenness of mind is called yoga. — Bhagavad Gita, 2.48",
         "Well begun is half done. — Aristotle",
         "Fall seven times, stand up eight. — Japanese proverb",
+        "Ghayal hoon, isliye ghatak hoon. — Dhurandhar",
+        "Jo nahi ho sakta, wahi toh karna hai. — Chak De! India",
+        "Taaqat toh genda bhi lagaata hai, lekin sher lagaata hai taaqat aur technique dono. — Dangal",
     ],
     SESSION_COMPLETE: [
         "Well done is better than well said. — Benjamin Franklin",
@@ -45,6 +51,7 @@ _LINES: Dict[str, List[str]] = {
         "Well begun is half done. — Aristotle",
         "You don't have to be great to start, but you have to start to be great. — Zig Ziglar",
         "Do what you can, with what you have, where you are. — Theodore Roosevelt",
+        "Picture abhi baaki hai mera dost. — Om Shanti Om",
     ],
     FELL_SHORT: [
         "I can accept failure. Everyone fails at something. But I can't accept not trying. — Michael Jordan",
