@@ -44,6 +44,23 @@ function toast(message) {
 
 /* ---------- Announce: toast/notification + speech ---------- */
 
+// Some motivation lines are Hindi movie dialogues written in Roman script
+// (no Devanagari to detect), so language is guessed from common Hindi/
+// Hinglish words -- lets the browser pick a Hindi voice for those instead
+// of mangling them through a default English one.
+const _HINDI_WORD_RE = /\b(hai|hoon|nahi|kar|karo|karna|toh|jo|wahi|isliye|mera|dost|bhaago|kaabil|safalta|taaqat|ghayal|ghatak|jhak|cheez|kaayanat|duniya|sher|genda|tumhare|dil|se|milne|abhi|baaki|picture)\b/i;
+
+let _hindiVoice = null;
+function _findHindiVoice() {
+  if (!("speechSynthesis" in window)) return null;
+  const voices = speechSynthesis.getVoices();
+  return voices.find((v) => v.lang && v.lang.toLowerCase().startsWith("hi")) || null;
+}
+if ("speechSynthesis" in window) {
+  _hindiVoice = _findHindiVoice();
+  speechSynthesis.onvoiceschanged = () => { _hindiVoice = _findHindiVoice(); };
+}
+
 function announce(message) {
   if (Settings.notifyEnabled && "Notification" in window && Notification.permission === "granted") {
     new Notification("FocusMentor AI", { body: message });
@@ -52,6 +69,10 @@ function announce(message) {
   }
   if (Settings.voiceEnabled && "speechSynthesis" in window) {
     const utter = new SpeechSynthesisUtterance(message);
+    if (_HINDI_WORD_RE.test(message) && _hindiVoice) {
+      utter.voice = _hindiVoice;
+      utter.lang = _hindiVoice.lang;
+    }
     speechSynthesis.speak(utter);
   }
 }
