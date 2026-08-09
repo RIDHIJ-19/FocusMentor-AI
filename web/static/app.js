@@ -29,6 +29,8 @@ const Settings = {
   set voiceEnabled(v) { localStorage.setItem("voiceEnabled", v); },
   get notifyEnabled() { return localStorage.getItem("notifyEnabled") === "true"; },
   set notifyEnabled(v) { localStorage.setItem("notifyEnabled", v); },
+  get voiceURI() { return localStorage.getItem("voiceURI") || ""; },
+  set voiceURI(v) { localStorage.setItem("voiceURI", v); },
 };
 
 /* ---------- Toasts (fallback when Notification isn't available/granted) ---------- */
@@ -61,6 +63,11 @@ if ("speechSynthesis" in window) {
   speechSynthesis.onvoiceschanged = () => { _hindiVoice = _findHindiVoice(); };
 }
 
+function _findVoiceByURI(uri) {
+  if (!uri || !("speechSynthesis" in window)) return null;
+  return speechSynthesis.getVoices().find((v) => v.voiceURI === uri) || null;
+}
+
 function announce(message) {
   if (Settings.notifyEnabled && "Notification" in window && Notification.permission === "granted") {
     new Notification("FocusMentor AI", { body: message });
@@ -69,6 +76,14 @@ function announce(message) {
   }
   if (Settings.voiceEnabled && "speechSynthesis" in window) {
     const utter = new SpeechSynthesisUtterance(message);
+    const chosen = _findVoiceByURI(Settings.voiceURI);
+    if (chosen) {
+      utter.voice = chosen;
+      utter.lang = chosen.lang;
+    }
+    // Hindi movie-dialogue lines still get the auto-detected Hindi voice,
+    // overriding the manual pick -- a Hindi line read by an English voice
+    // is worse than ignoring the user's chosen default just for those.
     if (_HINDI_WORD_RE.test(message) && _hindiVoice) {
       utter.voice = _hindiVoice;
       utter.lang = _hindiVoice.lang;
@@ -774,6 +789,30 @@ function initSettings() {
       Settings.notifyEnabled = false;
     }
   });
+
+  const voiceChoice = document.getElementById("setting-voice-choice");
+  const voiceTest = document.getElementById("setting-voice-test");
+
+  function populateVoices() {
+    if (!("speechSynthesis" in window)) return;
+    const voices = speechSynthesis.getVoices();
+    const current = Settings.voiceURI;
+    voiceChoice.innerHTML = '<option value="">Browser default</option>';
+    for (const v of voices) {
+      const opt = document.createElement("option");
+      opt.value = v.voiceURI;
+      opt.textContent = `${v.name} (${v.lang})`;
+      voiceChoice.appendChild(opt);
+    }
+    voiceChoice.value = current && voices.some((v) => v.voiceURI === current) ? current : "";
+  }
+  populateVoices();
+  if ("speechSynthesis" in window) {
+    speechSynthesis.addEventListener("voiceschanged", populateVoices);
+  }
+
+  voiceChoice.addEventListener("change", () => (Settings.voiceURI = voiceChoice.value));
+  voiceTest.addEventListener("click", () => announce("This is what this voice sounds like."));
 }
 
 /* ---------- Sidebar to-dos (sticky note) ---------- */
