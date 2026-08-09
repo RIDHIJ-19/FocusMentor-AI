@@ -50,6 +50,7 @@ class CheckinBody(BaseModel):
 class FinishBody(BaseModel):
     note: str = ""
     extend_requested: bool = False
+    mark_incomplete: bool = False
 
 
 def _checkin_interval(duration_min: int) -> int:
@@ -167,7 +168,12 @@ def finish_task(task_id: int, body: FinishBody):
     repo.update_status(task_id, STATUS_COMPLETED, notes=body.note or None)
     update_repo.add(task_id, COMPLETE, body.note)
 
-    verdict = ai_service.assess_completion(task["name"], task["goal"], body.note)
+    # An explicit "Didn't Finish" click is a stated fact, not something for
+    # the AI/fallback judge to infer from a maybe-vague note -- skip
+    # assess_completion entirely and just record the shortfall.
+    verdict = SHORTFALL if body.mark_incomplete else ai_service.assess_completion(
+        task["name"], task["goal"], body.note
+    )
     return {
         "extended": False,
         "verdict": verdict,

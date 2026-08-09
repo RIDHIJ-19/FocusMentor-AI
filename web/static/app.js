@@ -595,14 +595,15 @@ async function triggerSessionEnd() {
 
   const okBtn = document.getElementById("complete-ok");
   const extendBtn = document.getElementById("complete-extend");
+  const incompleteBtn = document.getElementById("complete-incomplete");
+  const allBtns = [okBtn, extendBtn, incompleteBtn];
 
-  okBtn.onclick = async () => {
+  async function finishSession(extraBody) {
     if (okBtn.disabled) return; // guard against a slow/cold-starting server + an impatient double click
-    okBtn.disabled = true;
-    extendBtn.disabled = true;
+    allBtns.forEach((b) => (b.disabled = true));
     try {
       const note = document.getElementById("complete-text").value.trim();
-      const result = await api("POST", `/api/tasks/${a.id}/finish`, { note });
+      const result = await api("POST", `/api/tasks/${a.id}/finish`, { note, ...extraBody });
       hideModal("modal-complete");
       state.active = null;
       sessionEnding = false;
@@ -621,15 +622,16 @@ async function triggerSessionEnd() {
     } catch (exc) {
       document.getElementById("complete-status").textContent = exc.data?.detail || exc.message;
     } finally {
-      okBtn.disabled = false;
-      extendBtn.disabled = false;
+      allBtns.forEach((b) => (b.disabled = false));
     }
-  };
+  }
+
+  okBtn.onclick = () => finishSession({});
+  incompleteBtn.onclick = () => finishSession({ mark_incomplete: true });
 
   extendBtn.onclick = async () => {
     if (extendBtn.disabled) return; // same double-submit guard as okBtn above
-    extendBtn.disabled = true;
-    okBtn.disabled = true;
+    allBtns.forEach((b) => (b.disabled = true));
     try {
       const note = document.getElementById("complete-text").value.trim();
       const result = await api("POST", `/api/tasks/${a.id}/finish`, { note, extend_requested: true });
@@ -656,8 +658,7 @@ async function triggerSessionEnd() {
     } catch (exc) {
       document.getElementById("complete-status").textContent = exc.data?.detail || exc.message;
     } finally {
-      extendBtn.disabled = false;
-      okBtn.disabled = false;
+      allBtns.forEach((b) => (b.disabled = false));
     }
   };
 }
